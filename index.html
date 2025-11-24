@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT Guard - URL Protection Dashboard</title>
+    <style>
+        :root {
+            --color-primary: #1a7c79;
+            --color-secondary: #2d9a98;
+            --color-danger: #c01547;
+            --color-success: #22c55e;
+            --color-warning: #f59e0b;
+            --color-bg: #0f172a;
+            --color-surface: #1e293b;
+            --color-text: #f5f5f5;
+            --color-text-secondary: #94a3b8;
+            --color-border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            padding: 30px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(26, 124, 121, 0.2);
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: var(--color-text);
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-section {
+            background: var(--color-surface);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: var(--color-primary);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(26, 124, 121, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 124, 121, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-border);
+            color: var(--color-text);
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-danger {
+            background: var(--color-danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b80f41;
+        }
+
+        .btn-copy {
+            background: #404854;
+            color: var(--color-text);
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-copy:hover {
+            background: #505a6f;
+        }
+
+        .token-display {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            position: relative;
+        }
+
+        .token-display.hidden {
+            filter: blur(5px);
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .card-meta {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--color-success);
+        }
+
+        .status-inactive {
+            background: rgba(192, 21, 71, 0.2);
+            color: #f87171;
+        }
+
+        .info-box {
+            background: rgba(26, 124, 121, 0.1);
+            border-left: 3px solid var(--color-primary);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+
+        .code-block {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--color-success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(192, 21, 71, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(192, 21, 71, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        table th {
+            background: var(--color-bg);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 13px;
+        }
+
+        table tr:hover {
+            background: rgba(26, 124, 121, 0.05);
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid var(--color-border);
+        }
+
+        .navbar .logo {
+            font-size: 24px;
+            color: var(--color-primary);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-email {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            width: 150px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 15px;
+            color: var(--color-text);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: var(--color-bg);
+        }
+
+        .dropdown-menu hr {
+            border: 0;
+            border-top: 1px solid var(--color-border);
+            margin: 5px 0;
+        }
+
+/* Modal Styles */
+.modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.modal-content {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.btn-close:hover {
+  color: var(--color-text);
+}
+
+/* Auth Section */
+.auth-section {
+  display: flex;
+  gap: 8px;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-email {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.user-menu {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  min-width: 150px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.dropdown-menu a:hover {
+  background: var(--color-bg);
+}
+
+.dropdown-menu hr {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="url"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(26, 124, 121, 0.1);
+}
+
+/* Alert Styles */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alert-error {
+  background: rgba(192, 21, 47, 0.1);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.alert-success {
+  background: rgba(33, 128, 141, 0.1);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+/* Button Sizes */
+.btn-full-width {
+  width: 100%;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: white;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Navbar User Section */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.nav-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+</style>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // Initialize Supabase Client
+      const SUPABASE_URL = 'https://mcdbktyiegpxhvllorjl.supabase.co'; // Ganti dengan URL Anda
+      const SUPABASE_ANON_KEY = 'sb_secret_8iXHHtCMgxdinGDzN7O_xw_J5G1jxIS'; // Ganti dengan key Anda
+      
+      const { createClient } = supabase;
+      const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
+      // Global state
+      window.gptGuardState = {
+        currentUser: null,
+        apiKeys: [],
+        isAuthenticated: false
+      };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+          <div class="nav-left">
+            <h1 class="logo">🛡️ GPT Guard</h1>
+          </div>
+          
+          <div class="nav-right">
+            <div id="authSection" class="auth-section">
+              <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+              <button class="btn btn-secondary" onclick="showSignupModal()">Sign Up</button>
+            </div>
+            
+            <div id="userSection" class="user-section" style="display: none;">
+              <span id="userEmail" class="user-email"></span>
+              <div class="user-menu">
+                <button onclick="toggleUserMenu()" class="btn-icon">⋮</button>
+                <div id="userMenuDropdown" class="dropdown-menu" style="display: none;">
+                  <a onclick="showSettings()">⚙️ Settings</a>
+                  <hr>
+                  <a onclick="logout()">🚪 Logout</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('create')">Buat Proteksi</button>
+            <button class="tab-btn" onclick="switchTab('backend')">Backend Setup</button>
+            <button class="tab-btn" onclick="switchTab('auth')">Auth Methods</button>
+            <button class="tab-btn" onclick="switchTab('guide')">Panduan</button>
+        </div>
+
+        <!-- Tab 1: Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <div class="form-section">
+                <h3>Daftar URL yang Dilindungi</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama GPT</th>
+                            <th>URL</th>
+                            <th>Auth Method</th>
+                            <th>Token</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboardTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">
+                                Belum ada proteksi URL. Buat yang baru di tab "Buat Proteksi"
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Backend Setup -->
+        <div id="backend" class="tab-content">
+            <!-- Backend Options -->
+            <div class="form-section">
+                <h3>🔗 Pilih Backend untuk Data Storage</h3>
+                <div class="info-box">
+                    💡 Pilih salah satu opsi di bawah untuk menyimpan data proteksi URL secara otomatis.
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="margin-bottom: 16px; display: block; color: var(--color-primary);">Backend Method</label>
+                    <select id="backendType" onchange="updateBackendFields()">
+                        <option value="none">-- Pilih Backend --</option>
+                        <option value="google_sheet">Google Sheet Webhook (Paling Mudah ⭐)</option>
+                        <option value="n8n">N8N Automation (Recommended)</option>
+                        <option value="supabase">Supabase REST API (Profesional)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Google Sheet Option -->
+            <div id="googleSheetFields" class="form-section hidden">
+                <h3>📊 Google Sheet Webhook Setup</h3>
+                <div class="info-box" style="background: rgba(34, 197, 94, 0.1); border-left-color: var(--color-success);">
+                    ✅ Setup waktu: 3 menit | Kesulitan: ⭐ Paling Mudah | Cost: Gratis
+                </div>
+
+                <div style="margin: 16px 0; padding: 12px; background: var(--color-bg); border-radius: 8px;">
+                    <h4 style="color: var(--color-primary); margin-bottom: 12px;">Langkah Setup:</h4>
+                    <ol style="margin-left: 20px; line-height: 2; font-size: 13px;">
+                        <li>Buat Google Sheet baru dengan nama "GPT Guard Protections"</li>
+                        <li>Buka Tools → Script Editor</li>
+                        <li>Copy-paste code dari tab Panduan (bagian Google Sheet)</li>
+                        <li>Deploy sebagai Web App → Copy URL</li>
+                        <li>Paste URL di bawah → Save</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label>Google Apps Script Webhook URL</label>
+                    <input type="url" id="googleSheetUrl" placeholder="https://script.google.com/macros/s/AKfy...">
+                </div>
+
+                <div class="form-group">
+                    <label>Google Sheet ID (dari URL sheet)</label>
+                    <input type="text" id="googleSheetId" placeholder="1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p">
+                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 6px;">
+                        Contoh URL: https://docs.google.com/spreadsheets/d/<strong>1a2b3c...</strong>/edit
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="testGoogleSheet()">🧪 Test Connection</button>
+            </div>
+
+            <!-- N8N Option -->
+            <div id="n8nFields" class="form-section hidden">
+                <h3>⚙️ N8N Automation Setup</h3>
+                <div class="info-box" style="background: rgba(26, 124, 121, 0.1); border-left-color: var(--color-primary);">
+                    ✅ Setup waktu: 15 menit | Kesulitan: ⭐⭐ Mudah | Cost: Gratis (self-hosted)
+                </div>
+
+                <div style="margin: 16px 0; padding: 12px; background: var(--color-bg); border-radius: 8px;">
+                    <h4 style="color: var(--color-primary); margin-bottom: 12px;">Langkah Setup:</h4>
+                    <ol style="margin-left: 20px; line-height: 2; font-size: 13px;">
+                        <li>Buka <strong>n8n.banirisset.com</strong></li>
+                        <li>Buat workflow baru: "GPT Guard Webhook"</li>
+                        <li>Add Trigger: Webhook → Copy URL</li>
+                        <li>Add Node: HTTP Request (untuk token generation)</li>
+                        <li>Add Node: Google Sheet (untuk log data)</li>
+                        <li>Connect & Activate workflow</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label>N8N Webhook URL</label>
+                    <input type="url" id="n8nUrl" placeholder="https://n8n.banirisset.com/webhook/gpt-guard">
+                </div>
+
+                <div class="form-group">
+                    <label>N8N API Key (optional)</label>
+                    <input type="password" id="n8nApiKey" placeholder="Leave empty if not using auth">
+                </div>
+
+                <button class="btn btn-primary" onclick="testN8N()">🧪 Test Connection</button>
+            </div>
+
+            <!-- Supabase Option -->
+            <div id="supabaseFields" class="form-section hidden">
+                <h3>🚀 Supabase REST API Setup</h3>
+                <div class="info-box" style="background: rgba(168, 75, 47, 0.1); border-left-color: var(--color-warning);">
+                    ✅ Setup waktu: 20 menit | Kesulitan: ⭐⭐⭐ Sedang | Cost: Gratis (free tier)
+                </div>
+
+                <div style="margin: 16px 0; padding: 12px; background: var(--color-bg); border-radius: 8px;">
+                    <h4 style="color: var(--color-primary); margin-bottom: 12px;">Langkah Setup:</h4>
+                    <ol style="margin-left: 20px; line-height: 2; font-size: 13px;">
+                        <li>Sign up di <strong>supabase.com</strong></li>
+                        <li>Create project baru: "gpt-guard"</li>
+                        <li>Buat table di SQL Editor (copy dari Panduan tab)</li>
+                        <li>Pergi ke Settings → API → Copy credentials</li>
+                        <li>Paste Project URL & Anon Key di bawah</li>
+                    </ol>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Supabase Project URL</label>
+                        <input type="url" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                    </div>
+                    <div class="form-group">
+                        <label>Supabase Anon Key</label>
+                        <input type="password" id="supabaseKey" placeholder="eyJhbGc...">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="testSupabase()">🧪 Test Connection</button>
+            </div>
+
+            <!-- Save Backend Config -->
+            <div class="form-section" style="margin-top: 20px;">
+                <button class="btn btn-primary btn-full-width" onclick="saveBackendConfig()">💾 Simpan Konfigurasi Backend</button>
+                <div id="backendStatus" style="margin-top: 12px;"></div>
+            </div>
+
+            <!-- Test Results -->
+            <div id="testResults" class="form-section hidden">
+                <h3>📋 Test Results</h3>
+                <div id="testResultsContent"></div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Create Protection -->
+        <div id="create" class="tab-content">
+            <!-- URL Basics -->
+            <div class="form-section">
+                <h3>1. Informasi URL</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nama GPT / Custom Bot</label>
+                        <input type="text" id="gptName" placeholder="Contoh: Threads Analyzer">
+                    </div>
+                    <div class="form-group">
+                        <label>GPT ID (dari URL ChatGPT)</label>
+                        <input type="text" id="gptId" placeholder="Contoh: g-abc123def456">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>URL Endpoint yang Dilindungi</label>
+                    <input type="url" id="protectedUrl" placeholder="https://api.yoursite.com/custom-gpt">
+                </div>
+                <div class="info-box">
+                    💡 URL ini akan menerima request dari ChatGPT. Pastikan URL accessible dari internet dan HTTPS.
+                </div>
+            </div>
+
+            <!-- Authentication Method -->
+            <div class="form-section">
+                <h3>2. Pilih Metode Autentikasi</h3>
+                <div class="form-group">
+                    <label>Tipe Autentikasi</label>
+                    <select id="authType" onchange="updateAuthFields()">
+                        <option value="none">Tidak Ada (None)</option>
+                        <option value="api_key">API Key</option>
+                        <option value="oauth">OAuth 2.0</option>
+                    </select>
+                </div>
+
+                <!-- API Key Fields -->
+                <div id="apiKeyFields" class="hidden">
+                    <div class="form-group">
+                        <label>API Key Name (Header Field)</label>
+                        <input type="text" id="apiKeyName" placeholder="Contoh: X-API-Key">
+                    </div>
+                    <div class="info-box">
+                        📝 Key ini akan dikirim di header request dari ChatGPT ke endpoint Anda.
+                    </div>
+                </div>
+
+                <!-- OAuth Fields -->
+                <div id="oauthFields" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>OAuth Client ID</label>
+                            <input type="text" id="oauthClientId" placeholder="client_id_anda">
+                        </div>
+                        <div class="form-group">
+                            <label>OAuth Client Secret</label>
+                            <input type="password" id="oauthClientSecret" placeholder="client_secret_anda">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Authorization URL</label>
+                            <input type="url" id="authorizationUrl" placeholder="https://auth.yoursite.com/authorize">
+                        </div>
+                        <div class="form-group">
+                            <label>Token URL</label>
+                            <input type="url" id="tokenUrl" placeholder="https://auth.yoursite.com/token">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Scope (pisahkan dengan spasi)</label>
+                        <input type="text" id="oauthScope" placeholder="read write profile">
+                    </div>
+                    <div class="info-box">
+                        🔐 Redirect URL OpenAI: <br>
+                        <strong>https://chat.openai.com/aip/{g-YOUR-GPT-ID}/oauth/callback</strong><br>
+                        <strong>https://chatgpt.com/aip/{g-YOUR-GPT-ID}/oauth/callback</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Token -->
+            <div class="form-section">
+                <h3>3. Generate Token Proteksi</h3>
+                <button class="btn btn-primary" onclick="generateToken()">🔑 Generate Token</button>
+                <div id="generatedToken" class="hidden" style="margin-top: 16px;">
+                    <label style="color: var(--color-success);">✓ Token Berhasil Dibuat</label>
+                    <div class="token-display" id="tokenDisplay"></div>
+                    <div class="actions">
+                        <button class="btn btn-copy" onclick="copyToken()">📋 Copy Token</button>
+                        <button class="btn btn-copy" onclick="toggleTokenVisibility()">👁️ Lihat/Sembunyikan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Implementation Instructions -->
+            <div class="form-section">
+                <h3>4. Konfigurasi di Custom GPT</h3>
+                <div style="margin-bottom: 16px;">
+                    <label style="color: var(--color-primary);">Langkah-langkah:</label>
+                    <ol style="margin: 10px 0 0 20px; color: var(--color-text-secondary); font-size: 13px;">
+                        <li>Buka Custom GPT di ChatGPT</li>
+                        <li>Pergi ke tab "Actions" → "Create new action"</li>
+                        <li>Salin URL endpoint ke Authentication</li>
+                        <li>Pilih auth method sesuai pilihan di atas</li>
+                        <li>Salin token/credentials ke field autentikasi</li>
+                        <li>Setup schema validasi (lihat tab "Auth Methods")</li>
+                    </ol>
+                </div>
+                <button class="btn btn-secondary" onclick="saveProtection()">💾 Simpan & Daftar Proteksi</button>
+            </div>
+        </div>
+
+        <!-- Tab 3: Auth Methods -->
+        <div id="auth" class="tab-content">
+            <div class="form-section">
+                <h3>Metode Autentikasi OpenAI Actions</h3>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">1️⃣ None (Tanpa Autentikasi)</h4>
+                <div class="info-box">
+                    Gunakan untuk endpoint publik yang tidak perlu keamanan. User bisa langsung call tanpa login.
+                </div>
+                <div class="code-block">// Request dari ChatGPT
+GET /api/endpoint
+Host: api.yoursite.com</div>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">2️⃣ API Key</h4>
+                <div class="info-box">
+                    Gunakan untuk endpoint yang perlu proteksi dasar. Setiap request akan include API key di header.
+                </div>
+                <div class="code-block">// Request dari ChatGPT dengan API Key
+GET /api/endpoint
+Host: api.yoursite.com
+X-API-Key: your_secret_api_key_here
+Authorization: Bearer YOUR_API_KEY
+
+// Server-side validation (Node.js)
+const apiKey = req.headers['x-api-key'];
+if (apiKey !== process.env.VALID_API_KEY) {
+  return res.status(401).json({error: 'Unauthorized'});
+}</div>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">3️⃣ OAuth 2.0 (Recommended)</h4>
+                <div class="info-box">
+                    Gunakan untuk endpoint yang perlu user-specific access & refresh token support.
+                </div>
+                <div class="code-block">// OAuth Flow
+1. User klik "Sign in to [domain]" di ChatGPT
+2. Redirect ke: https://auth.yoursite.com/authorize
+   ?client_id=YOUR_CLIENT_ID
+   &redirect_uri=https://chat.openai.com/aip/g-xxx/oauth/callback
+   &scope=read+write
+   &state=random_state_string
+
+3. User login & approve scopes
+4. Server kirim authorization code ke OpenAI callback
+5. OpenAI call token_url untuk dapatkan access token
+6. Setiap request, OpenAI include: Authorization: Bearer ACCESS_TOKEN</div>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">📊 Comparison Tabel</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspek</th>
+                            <th>None</th>
+                            <th>API Key</th>
+                            <th>OAuth</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Keamanan</strong></td>
+                            <td>Rendah</td>
+                            <td>Menengah</td>
+                            <td>Tinggi</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Setup Kompleksitas</strong></td>
+                            <td>Sangat Mudah</td>
+                            <td>Mudah</td>
+                            <td>Rumit</td>
+                        </tr>
+                        <tr>
+                            <td><strong>User Experience</strong></td>
+                            <td>Instant</td>
+                            <td>Instant</td>
+                            <td>Perlu Login</td>
+                        </tr>
+                        <tr>
+                            <td><strong>User-Specific Data</strong></td>
+                            <td>❌ Tidak</td>
+                            <td>❌ Tidak</td>
+                            <td>✅ Ya</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Refresh Token</strong></td>
+                            <td>❌ Tidak</td>
+                            <td>❌ Tidak</td>
+                            <td>✅ Ya</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 4: Panduan -->
+        <div id="guide" class="tab-content">
+            <div class="form-section">
+                <h3>📚 Panduan Lengkap GPT Guard</h3>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">Setup API Key (Rekomendasi untuk Pemula)</h4>
+                <ol style="margin: 10px 0 20px 20px; line-height: 2;">
+                    <li><strong>Generate Token</strong> di tab "Buat Proteksi"</li>
+                    <li><strong>Copy Token</strong> yang sudah di-generate</li>
+                    <li>Buka Custom GPT → Configure → Actions</li>
+                    <li>Pilih "Create new" atau edit existing action</li>
+                    <li>Di Authentication, pilih <strong>"API Key"</strong></li>
+                    <li>Auth Type: <strong>"API Key"</strong></li>
+                    <li>API Key Name: <strong>"Authorization"</strong></li>
+                    <li>API Key Value: <strong>Paste token Anda</strong></li>
+                    <li>Klik Save & Test</li>
+                </ol>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">Backend Validation (Node.js Example)</h4>
+                <div class="code-block">// app.js atau route handler
+const express = require('express');
+const app = express();
+
+// Middleware untuk validasi token
+const validateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const expectedToken = process.env.GPT_PROTECTION_TOKEN;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Missing authorization header' });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  
+  if (token !== expectedToken) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+
+  next();
+};
+
+// Endpoint Custom GPT dengan proteksi
+app.post('/api/custom-gpt-action', validateToken, (req, res) => {
+  // Process GPT request
+  res.json({
+    result: 'Protected data from your API',
+    timestamp: new Date()
+  });
+});
+
+app.listen(3000, () => console.log('API running on port 3000'));</div>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">URL Endpoint Format</h4>
+                <div class="code-block">// OpenAI akan POST ke endpoint Anda
+POST https://api.yoursite.com/custom-gpt-action
+Content-Type: application/json
+Authorization: Bearer your_generated_token_here
+
+{
+  "request_body": {
+    "query": "user input",
+    "context": {...}
+  }
+}
+
+// Response format yang diharapkan
+{
+  "result": "Your response",
+  "data": {...}
+}</div>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">Schema Validation</h4>
+                <div class="info-box">
+                    📌 OpenAI Actions require OpenAPI 3.0 schema definition untuk validate request/response
+                </div>
+                <div class="code-block">{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Custom GPT API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.yoursite.com"
+    }
+  ],
+  "paths": {
+    "/custom-gpt-action": {
+      "post": {
+        "operationId": "customGptAction",
+        "summary": "Process GPT request",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "User query"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}</div>
+
+                <h4 style="margin-top: 20px; color: var(--color-primary);">⚠️ Best Practices</h4>
+                <ul style="margin: 10px 0 0 20px; line-height: 2; font-size: 13px;">
+                    <li>✅ Selalu gunakan HTTPS untuk endpoint</li>
+                    <li>✅ Implement rate limiting untuk mencegah abuse</li>
+                    <li>✅ Validate schema OpenAPI di endpoint Anda</li>
+                    <li>✅ Log semua request dari ChatGPT untuk debugging</li>
+                    <li>✅ Set timeout untuk response (max 30 detik)</li>
+                    <li>✅ Gunakan unique token per Custom GPT</li>
+                    <li>✅ Rotate token secara berkala</li>
+                    <li>❌ Jangan hardcode token di OpenAI config</li>
+                    <li>❌ Jangan expose client secret di public</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Update auth fields visibility
+        function updateAuthFields() {
+            const authType = document.getElementById('authType').value;
+            document.getElementById('apiKeyFields').classList.add('hidden');
+            document.getElementById('oauthFields').classList.add('hidden');
+
+            if (authType === 'api_key') {
+                document.getElementById('apiKeyFields').classList.remove('hidden');
+            } else if (authType === 'oauth') {
+                document.getElementById('oauthFields').classList.remove('hidden');
+            }
+        }
+
+        // Generate token
+        function generateToken() {
+            const prefix = document.getElementById('gptName').value.replace(/\s+/g, '_').toLowerCase();
+            const token = `gpt_guard_${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 12)}`;
+            
+            document.getElementById('tokenDisplay').textContent = token;
+            document.getElementById('generatedToken').classList.remove('hidden');
+            
+            window.currentToken = token;
+        }
+
+        // Copy token
+        function copyToken() {
+            if (!window.currentToken) return;
+            
+            navigator.clipboard.writeText(window.currentToken).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Tersalin!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        }
+
+        // Toggle token visibility
+        function toggleTokenVisibility() {
+            const display = document.getElementById('tokenDisplay');
+            display.classList.toggle('hidden');
+        }
+
+        // Save protection
+        function saveProtection() {
+            const gptName = document.getElementById('gptName').value;
+            const gptId = document.getElementById('gptId').value;
+            const url = document.getElementById('protectedUrl').value;
+            const authType = document.getElementById('authType').value;
+
+            if (!gptName || !url) {
+                alert('⚠️ Nama GPT dan URL tidak boleh kosong!');
+                return;
+            }
+
+            const protection = {
+                id: Date.now(),
+                gptName,
+                gptId,
+                url,
+                authType,
+                token: window.currentToken || 'N/A',
+                createdAt: new Date().toLocaleString('id-ID'),
+                status: 'active'
+            };
+
+            let protections = JSON.parse(localStorage.getItem('gptProtections') || '[]');
+            protections.push(protection);
+            localStorage.setItem('gptProtections', JSON.stringify(protections));
+
+            addProtectionToTable(protection);
+            
+            // Reset form
+            document.getElementById('gptName').value = '';
+            document.getElementById('gptId').value = '';
+            document.getElementById('protectedUrl').value = '';
+            document.getElementById('generatedToken').classList.add('hidden');
+
+            alert('✅ Proteksi URL berhasil disimpan!');
+            switchTab('dashboard');
+        }
+
+        // Add protection to dashboard table
+        function addProtectionToTable(protection) {
+            const table = document.getElementById('dashboardTable');
+            
+            // Remove "no data" message
+            if (table.innerHTML.includes('Belum ada proteksi')) {
+                table.innerHTML = '';
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${protection.gptName}</td>
+                <td style="font-size: 11px; color: var(--color-text-secondary);">${protection.url.substring(0, 40)}...</td>
+                <td><span class="status-badge" style="background: rgba(26, 124, 121, 0.2); color: var(--color-primary);">${protection.authType}</span></td>
+                <td style="font-size: 11px; font-family: monospace;">${protection.token.substring(0, 20)}...</td>
+                <td><span class="status-badge status-active">✓ Active</span></td>
+                <td>
+                    <button class="btn btn-copy" onclick="deleteProtection(${protection.id})">🗑️ Hapus</button>
+                </td>
+            `;
+            table.appendChild(row);
+        }
+
+        // Delete protection
+        function deleteProtection(id) {
+            if (!confirm('Hapus proteksi ini?')) return;
+            
+            let protections = JSON.parse(localStorage.getItem('gptProtections') || '[]');
+            protections = protections.filter(p => p.id !== id);
+            localStorage.setItem('gptProtections', JSON.stringify(protections));
+            
+            location.reload();
+        }
+
+        // Update auth fields visibility
+        function updateBackendFields() {
+            const backendType = document.getElementById('backendType').value;
+            document.getElementById('googleSheetFields').classList.add('hidden');
+            document.getElementById('n8nFields').classList.add('hidden');
+            document.getElementById('supabaseFields').classList.add('hidden');
+
+            if (backendType === 'google_sheet') {
+                document.getElementById('googleSheetFields').classList.remove('hidden');
+            } else if (backendType === 'n8n') {
+                document.getElementById('n8nFields').classList.remove('hidden');
+            } else if (backendType === 'supabase') {
+                document.getElementById('supabaseFields').classList.remove('hidden');
+            }
+        }
+
+        // Test Google Sheet connection
+        async function testGoogleSheet() {
+            const url = document.getElementById('googleSheetUrl').value;
+            if (!url) {
+                alert('❌ Masukkan URL Google Apps Script!');
+                return;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        gptName: 'Test GPT',
+                        protectedUrl: 'https://api.test.com',
+                        authType: 'api_key'
+                    })
+                });
+                const data = await response.json();
+                showTestResult('Google Sheet', data.status === 'success' ? '✅ Connected!' : '❌ Failed: ' + data.message);
+            } catch(error) {
+                showTestResult('Google Sheet', '❌ Error: ' + error.message);
+            }
+        }
+
+        // Test N8N connection
+        async function testN8N() {
+            const url = document.getElementById('n8nUrl').value;
+            const apiKey = document.getElementById('n8nApiKey').value;
+            
+            if (!url) {
+                alert('❌ Masukkan URL N8N!');
+                return;
+            }
+
+            try {
+                const headers = {'Content-Type': 'application/json'};
+                if (apiKey) headers['X-API-Key'] = apiKey;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        gptName: 'Test GPT',
+                        protectedUrl: 'https://api.test.com',
+                        authType: 'api_key'
+                    })
+                });
+                const data = await response.json();
+                showTestResult('N8N', data.status === 'success' ? '✅ Connected!' : '❌ Failed: ' + data.message);
+            } catch(error) {
+                showTestResult('N8N', '❌ Error: ' + error.message);
+            }
+        }
+
+        // Test Supabase connection
+        async function testSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                alert('❌ Masukkan URL dan Key Supabase!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${url}/rest/v1/gpt_protections?limit=1`, {
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${key}`
+                    }
+                });
+                if (response.ok) {
+                    showTestResult('Supabase', '✅ Connected!');
+                } else {
+                    showTestResult('Supabase', '❌ Failed: Invalid credentials or table not found');
+                }
+            } catch(error) {
+                showTestResult('Supabase', '❌ Error: ' + error.message);
+            }
+        }
+
+        // Show test result
+        function showTestResult(service, message) {
+            const resultsDiv = document.getElementById('testResults');
+            const contentDiv = document.getElementById('testResultsContent');
+            contentDiv.innerHTML = `<strong>${service}</strong><br>${message}`;
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Save backend config
+        function saveBackendConfig() {
+            const backendType = document.getElementById('backendType').value;
+            
+            if (backendType === 'none') {
+                alert('⚠️ Pilih backend terlebih dahulu!');
+                return;
+            }
+
+            const config = {
+                type: backendType,
+                timestamp: new Date().toLocaleString('id-ID')
+            };
+
+            if (backendType === 'google_sheet') {
+                config.url = document.getElementById('googleSheetUrl').value;
+                config.sheetId = document.getElementById('googleSheetId').value;
+            } else if (backendType === 'n8n') {
+                config.url = document.getElementById('n8nUrl').value;
+                config.apiKey = document.getElementById('n8nApiKey').value;
+            } else if (backendType === 'supabase') {
+                config.url = document.getElementById('supabaseUrl').value;
+                config.key = document.getElementById('supabaseKey').value;
+            }
+
+            localStorage.setItem('backendConfig', JSON.stringify(config));
+            window.backendConfig = config;
+
+            const statusDiv = document.getElementById('backendStatus');
+            statusDiv.innerHTML = `<div class="alert alert-success">✅ Backend ${backendType} berhasil dikonfigurasi!</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+                switchTab('create');
+            }, 2000);
+        }
+
+        // Load protections on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const protections = JSON.parse(localStorage.getItem('gptProtections') || '[]');
+            
+            if (protections.length > 0) {
+                const table = document.getElementById('dashboardTable');
+                table.innerHTML = '';
+                protections.forEach(p => addProtectionToTable(p));
+            }
+
+            // Load backend config
+            const backendConfig = localStorage.getItem('backendConfig');
+            if (backendConfig) {
+                window.backendConfig = JSON.parse(backendConfig);
+                console.log('Backend configured:', window.backendConfig);
+            }
+        });
+</script>
+<script>
+// ============================================
+// AUTHENTICATION FUNCTIONS
+// ============================================
+
+// Show Login Modal
+function showLoginModal() {
+  document.getElementById('loginModal').style.display = 'flex';
+  document.getElementById('modalOverlay').style.display = 'block';
+}
+
+function closeLoginModal() {
+  document.getElementById('loginModal').style.display = 'none';
+  document.getElementById('modalOverlay').style.display = 'none';
+}
+
+// Show Signup Modal
+function showSignupModal() {
+  document.getElementById('signupModal').style.display = 'flex';
+  document.getElementById('modalOverlay').style.display = 'block';
+}
+
+function closeSignupModal() {
+  document.getElementById('signupModal').style.display = 'none';
+  document.getElementById('modalOverlay').style.display = 'none';
+}
+
+// Close all modals
+function closeAllModals() {
+  closeLoginModal();
+  closeSignupModal();
+}
+
+// Switch between login and signup
+function switchToSignup() {
+  closeLoginModal();
+  showSignupModal();
+}
+
+function switchToLogin() {
+  closeSignupModal();
+  showLoginModal();
+}
+
+// Handle Login
+async function handleLogin(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
+      showError('loginError', error.message);
+      return;
+    }
+    
+    // Success
+    closeLoginModal();
+    await updateAuthUI();
+    showNotification('✅ Login berhasil!');
+    
+  } catch (err) {
+    showError('loginError', err.message);
+  }
+}
+
+// Handle Signup
+async function handleSignup(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
+  const fullName = document.getElementById('signupName').value;
+  
+  try {
+    // 1. Create auth user
+    const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+    
+    if (authError) {
+      showError('signupError', authError.message);
+      return;
+    }
+    
+    // 2. Create user record in database
+    const { error: dbError } = await supabaseClient
+      .from('users')
+      .insert([
+        {
+          id: authData.user.id,
+          email,
+          full_name: fullName,
+          password_hash: password // Note: di production, hash this di backend!
+        }
+      ]);
+    
+    if (dbError) {
+      showError('signupError', 'Error creating user profile: ' + dbError.message);
+      return;
+    }
+    
+    // Success
+    closeSignupModal();
+    showNotification('✅ Account created! Check email untuk verifikasi.');
+    
+  } catch (err) {
+    showError('signupError', err.message);
+  }
+}
+
+// Logout
+async function logout() {
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+    
+    window.gptGuardState.currentUser = null;
+    window.gptGuardState.isAuthenticated = false;
+    updateAuthUI();
+    showNotification('✅ Logout berhasil');
+    
+  } catch (err) {
+    console.error('Logout error:', err);
+  }
+}
+
+// Update Auth UI (tampil login atau user menu)
+async function updateAuthUI() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  
+  const authSection = document.getElementById('authSection');
+  const userSection = document.getElementById('userSection');
+  
+  if (user) {
+    // User logged in
+    window.gptGuardState.currentUser = user;
+    window.gptGuardState.isAuthenticated = true;
+    
+    authSection.style.display = 'none';
+    userSection.style.display = 'flex';
+    document.getElementById('userEmail').textContent = user.email;
+    
+    // Load API keys for this user
+    loadApiKeys();
+    
+  } else {
+    // User not logged in
+    window.gptGuardState.isAuthenticated = false;
+    
+    authSection.style.display = 'flex';
+    userSection.style.display = 'none';
+  }
+}
+
+// Toggle user menu dropdown
+function toggleUserMenu() {
+  const dropdown = document.getElementById('userMenuDropdown');
+  dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+// Show error
+function showError(elementId, message) {
+  const errorEl = document.getElementById(elementId);
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
+    setTimeout(() => {
+      errorEl.style.display = 'none';
+    }, 5000);
+  }
+}
+
+// Show notification
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'notification';
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--color-success);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+  `;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => notification.remove(), 3000);
+}
+
+// ============================================
+// API KEYS MANAGEMENT
+// ============================================
+
+// Load API Keys from Supabase
+async function loadApiKeys() {
+  if (!window.gptGuardState.isAuthenticated) return;
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('api_keys')
+      .select('*')
+      .eq('user_id', window.gptGuardState.currentUser.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    window.gptGuardState.apiKeys = data || [];
+    renderApiKeysList();
+    
+  } catch (err) {
+    console.error('Error loading API keys:', err);
+    showError('mainError', 'Gagal memuat API keys');
+  }
+}
+
+// Create new API Key
+async function createApiKey() {
+  if (!window.gptGuardState.isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  const keyName = document.getElementById('gptName')?.value;
+  const protectedUrl = document.getElementById('protectionUrl')?.value;
+  
+  if (!keyName || !protectedUrl) {
+    alert('Silakan isi semua field!');
+    return;
+  }
+  
+  try {
+    // Generate unique API key
+    const apiKey = generateApiKey(keyName);
+    
+    // Insert to database
+    const { data, error } = await supabaseClient
+      .from('api_keys')
+      .insert([{
+        user_id: window.gptGuardState.currentUser.id,
+        key_name: keyName,
+        api_key: apiKey,
+        protected_url: protectedUrl,
+        auth_method: 'api_key',
+        status: 'active'
+      }])
+      .select();
+    
+    if (error) throw error;
+    
+    // Clear form
+    document.getElementById('gptName').value = '';
+    document.getElementById('protectionUrl').value = '';
+    
+    // Show token
+    showApiKeyModal(data);
+    
+    // Reload list
+    loadApiKeys();
+    showNotification('✅ API Key berhasil dibuat!');
+    
+  } catch (err) {
+    console.error('Error creating API key:', err);
+    showError('mainError', 'Gagal membuat API key: ' + err.message);
+  }
+}
+
+// Generate API Key
+function generateApiKey(keyName) {
+  const prefix = keyName.replace(/\s+/g, '_').toLowerCase();
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 12);
+  return `gpt_guard_${prefix}_${timestamp}_${random}`;
+}
+
+// Render API Keys List
+function renderApiKeysList() {
+  const table = document.getElementById('apiKeysTable');
+  if (!table) return;
+  
+  if (window.gptGuardState.apiKeys.length === 0) {
+    table.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">
+          Belum ada API key. Buat yang baru di tab "Buat Proteksi"
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  table.innerHTML = window.gptGuardState.apiKeys.map(key => `
+    <tr>
+      <td>${key.key_name}</td>
+      <td>
+        <code style="font-size: 11px;">
+          ${key.api_key.substring(0, 20)}...
+        </code>
+      </td>
+      <td><span class="status-badge status-active">Active</span></td>
+      <td>${new Date(key.created_at).toLocaleDateString('id-ID')}</td>
+      <td>${key.usage_count}</td>
+      <td>
+        <button class="btn btn-sm" onclick="copyToClipboard('${key.api_key}')">📋 Copy</button>
+        <button class="btn btn-sm btn-danger" onclick="revokeApiKey('${key.id}')">🔒 Revoke</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Copy to clipboard
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text);
+  showNotification('✅ Copied to clipboard!');
+}
+
+// Revoke API Key
+async function revokeApiKey(keyId) {
+  if (!confirm('Yakin ingin revoke API key ini?')) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from('api_keys')
+      .update({ status: 'revoked' })
+      .eq('id', keyId);
+    
+    if (error) throw error;
+    
+    loadApiKeys();
+    showNotification('✅ API key di-revoke');
+    
+  } catch (err) {
+    console.error('Error revoking API key:', err);
+    showError('mainError', 'Gagal revoke API key');
+  }
+}
+
+// Show Settings
+function showSettings() {
+  alert('Settings feature coming soon!');
+  toggleUserMenu();
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+// Check auth status on page load
+window.addEventListener('load', async () => {
+  updateAuthUI();
+  
+  // Setup Supabase Auth listener
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event);
+    updateAuthUI();
+  });
+});
+</script>
+<!-- Login Modal -->
+<div id="loginModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🔐 Login</h2>
+      <button class="btn-close" onclick="closeLoginModal()">✕</button>
+    </div>
+    
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="user@example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" required>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full-width">Sign In</button>
+      
+      <p class="text-center">
+        Belum punya akun?
+        <a onclick="switchToSignup()" style="cursor: pointer; color: var(--color-primary);">Sign Up</a>
+      </p>
+    </form>
+    
+    <div id="loginError" class="alert alert-error" style="display: none;"></div>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signupModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📝 Sign Up</h2>
+      <button class="btn-close" onclick="closeSignupModal()">✕</button>
+    </div>
+    
+    <form onsubmit="handleSignup(event)">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" placeholder="John Doe" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="user@example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Password (min 8 chars)</label>
+        <input type="password" id="signupPassword" placeholder="••••••••" minlength="8" required>
+      </div>
+      
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="agreeTerms" required>
+          Setuju dengan Terms & Conditions
+        </label>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full-width">Create Account</button>
+      
+      <p class="text-center">
+        Sudah punya akun?
+        <a onclick="switchToLogin()" style="cursor: pointer; color: var(--color-primary);">Sign In</a>
+      </p>
+    </form>
+    
+    <div id="signupError" class="alert alert-error" style="display: none;"></div>
+  </div>
+</div>
+
+<!-- Modal Overlay -->
+<div id="modalOverlay" class="modal-overlay" onclick="closeAllModals()"></div>
+</body>
+</html>

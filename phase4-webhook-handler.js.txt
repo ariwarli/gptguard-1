@@ -1,0 +1,272 @@
+/**
+ * Phase 4: Respond to Webhook Handler
+ * GPT Protection Database - Webhook Response Module
+ * 
+ * Handles incoming webhook requests and generates appropriate responses
+ * based on API key verification results from n8n workflow
+ */
+
+const express = require('express');
+const router = express.Router();
+const axios = require('axios');
+require('dotenv').config();
+
+// ==================== CONSTANTS ====================
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://mcdbktyiegpxhvllorjl.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.banirisset.com/webhook/verify-api-key';
+
+// ==================== TYPES ====================
+/**
+ * @typedef {Object} WebhookRequest
+ * @property {string} gpt_id - The GPT identifier
+ * @property {string} api_key - The API key to verify
+ * @property {string} timestamp - Request timestamp
+ * @property {string} user_email - User email address
+ */
+
+/**
+ * @typedef {Object} VerificationResult
+ * @property {boolean} is_valid - Whether the API key is valid
+ * @property {string} status - Status (active, suspended, invalid)
+ * @property {Object} gpt_data - Associated GPT data
+ * @property {string} message - Response message
+ */
+
+// ==================== MAIN WEBHOOK HANDLER ====================
+
+/**
+ * Main webhook endpoint that receives verification requests from n8n
+ * POST /webhook/verify-api-key
+ */
+router.post('/verify-api-key', async (req, res) => {
+  try {
+    const { gpt_id, api_key, user_email, timestamp } = req.body;
+
+    // Validate incoming data
+    if (!gpt_id || !api_key) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: gpt_id and api_key',
+        code: 'INVALID_REQUEST'
+      });
+    }
+
+    // Call verification logic
+    const verificationResult = await verifyApiKey(gpt_id, api_key, user_email);
+
+    // Generate response body
+    const responseBody = generateResponseBody(verificationResult);
+
+    // Return success response
+    return res.status(200).json({
+      success: true,
+      data: responseBody,
+      timestamp: new Date().toISOString(),
+      ...verificationResult
+    });
+
+  } catch (error) {
+    console.error('Webhook Handler Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
+// ==================== VERIFICATION LOGIC ====================
+
+/**
+ * Verify API key against Supabase database
+ * @param {string} gpt_id - GPT identifier
+ * @param {string} api_key - API key to verify
+ * @param {string} user_email - User email
+ * @returns {Promise<VerificationResult>}
+ */
+async function verifyApiKey(gpt_id, api_key, user_email) {
+  try {
+    // Query Supabase for the API key
+    const response = await axios.get(
+      `${SUPABASE_URL}/rest/v1/rpc/verify_api_key`,
+      {
+        params: {
+          p_gpt_id: gpt_id,
+          p_api_key: api_key
+        },
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const data = response.data[0] || {};
+
+    return {
+      is_valid: data.is_valid === true,
+      status: data.status || 'invalid',
+      gpt_data: {
+        gpt_id: gpt_id,
+        gpt_name: data.gpt_name || 'Unknown',
+        owner_email: data.owner_email || user_email,
+        created_date: data.created_date
+      },
+      message: data.is_valid ? 'API key verified successfully' : 'API key verification failed'
+    };
+
+  } catch (error) {
+    console.error('API Key Verification Error:', error.message);
+    return {
+      is_valid: false,
+      status: 'error',
+      gpt_data: { gpt_id },
+      message: 'Verification service unavailable'
+    };
+  }
+}
+
+// ==================== RESPONSE GENERATOR ====================
+
+/**
+ * Generate response body for n8n HTTP Request node
+ * @param {VerificationResult} result - Verification result
+ * @returns {Object} Response body
+ */
+function generateResponseBody(result) {
+  return {
+    api_key: result.is_valid ? 'valid' : 'invalid',
+    status: result.status,
+    gpt_id: result.gpt_data.gpt_id,
+    gpt_name: result.gpt_data.gpt_name,
+    message: result.message,
+    timestamp: new Date().toISOString()
+  };
+}
+
+// ==================== ERROR HANDLING ====================
+
+/**
+ * Webhook with error handling and retry logic
+ * POST /webhook/verify-api-key-with-retry
+ */
+router.post('/verify-api-key-with-retry', async (req, res) => {
+  const maxRetries = 3;
+  let attempt = 0;
+
+  async function attemptVerification() {
+    try {
+      const { gpt_id, api_key, user_email } = req.body;
+
+      const verificationResult = await verifyApiKey(gpt_id, api_key, user_email);
+      const responseBody = generateResponseBody(verificationResult);
+
+      return res.status(200).json({
+        success: true,
+        data: responseBody,
+        attempts: attempt + 1,
+        ...verificationResult
+      });
+
+    } catch (error) {
+      attempt++;
+      if (attempt < maxRetries) {
+        console.log(`Retry attempt ${attempt} of ${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        return attemptVerification();
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: 'Verification failed after retries',
+          attempts: attempt
+        });
+      }
+    }
+  }
+
+  return attemptVerification();
+});
+
+// ==================== RESPONSE FORMATTER ====================
+
+/**
+ * Format response for different HTTP Request node requirements
+ * POST /webhook/verify-api-key-formatted
+ */
+router.post('/verify-api-key-formatted', async (req, res) => {
+  try {
+    const { gpt_id, api_key, user_email, format = 'json' } = req.body;
+
+    const verificationResult = await verifyApiKey(gpt_id, api_key, user_email);
+    const responseBody = generateResponseBody(verificationResult);
+
+    // Format based on requested format
+    let formattedResponse;
+
+    switch (format) {
+      case 'xml':
+        formattedResponse = jsonToXml(responseBody);
+        res.type('application/xml');
+        break;
+      case 'text':
+        formattedResponse = jsonToText(responseBody);
+        res.type('text/plain');
+        break;
+      case 'json':
+      default:
+        formattedResponse = responseBody;
+        res.type('application/json');
+    }
+
+    return res.status(200).send(formattedResponse);
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Convert JSON to XML format
+ */
+function jsonToXml(obj, rootName = 'response') {
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<${rootName}>`;
+  
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      xml += `<${key}>${jsonToXml(obj[key], key)}</${key}>`;
+    } else {
+      xml += `<${key}>${obj[key]}</${key}>`;
+    }
+  }
+  
+  xml += `</${rootName}>`;
+  return xml;
+}
+
+/**
+ * Convert JSON to text format
+ */
+function jsonToText(obj, prefix = '') {
+  let text = '';
+  
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      text += `${prefix}${key}:\n${jsonToText(obj[key], prefix + '  ')}`;
+    } else {
+      text += `${prefix}${key}: ${obj[key]}\n`;
+    }
+  }
+  
+  return text;
+}
+
+// ==================== EXPORTS ====================
+module.exports = router;
